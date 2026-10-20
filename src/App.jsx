@@ -9,12 +9,11 @@ import {
   Users,
   Box,
   Settings as SettingsIcon,
+  LogIn,
+  TrendingUp,
+  Folder,
+  ClipboardList,
 } from "lucide-react";
-
-import {
-  INITIAL_STUDENT_RECORDS,
-  INITIAL_ADMIN_REQUESTS,
-} from "./data/mockData";
 import { Navbar, Sidebar } from "./components/Navigation";
 import StudentRecords from "./components/StudentRecords";
 import DocumentRequest from "./components/DocumentRequest";
@@ -28,11 +27,83 @@ import {
   PlaceholderView,
 } from "./components/ExtraViews";
 
+const INITIAL_ADMIN_REQUESTS = [
+  {
+    id: "REQ-1001",
+    studentName: "Juan Dela Cruz",
+    studentId: "2023-0142",
+    docType: "Certificate of Enrollment (1)",
+    purpose: "Scholarship Application",
+    copies: 1,
+    delivery: "Pick-up",
+    dateRequested: "May 02, 2026",
+    status: "Submits",
+    clearanceFile: "CMU_Clearance_Juan.pdf",
+    clearanceStatus: "Approved",
+  },
+  {
+    id: "REQ-1002",
+    studentName: "Maria Santos",
+    studentId: "2022-0891",
+    docType: "Transcript of Records (1)",
+    purpose: "Employment Requirement",
+    copies: 1,
+    delivery: "Email",
+    dateRequested: "May 05, 2026",
+    status: "For Release",
+    clearanceFile: "CMU_Clearance_Maria.pdf",
+    clearanceStatus: "Approved",
+  },
+];
+
+const INITIAL_STUDENT_RECORDS = [
+  {
+    id: "REC-001",
+    name: "Certificate of Enrollment",
+    description: "Official proof of current term enrollment for AY 2025-2026",
+    dateIssued: "10/12/25",
+    status: "Available",
+    fileUrl: "#",
+  },
+  {
+    id: "REC-002",
+    name: "Certificate of Grades",
+    description: "Certified transcript of completed semester grades",
+    dateIssued: "01/15/26",
+    status: "Missing",
+    fileUrl: "#",
+  },
+  {
+    id: "REC-003",
+    name: "Student clearance",
+    description: "Library and departmental clearance document",
+    dateIssued: "02/01/26",
+    status: "Available",
+    fileUrl: "#",
+  },
+  {
+    id: "REC-004",
+    name: "Transcript of Records",
+    description: "Official complete transcript of academic record",
+    dateIssued: "Pending",
+    status: "Missing",
+    fileUrl: "#",
+  },
+  {
+    id: "REC-005",
+    name: "Certificate of Good Moral",
+    description: "Complete academic transcript & conduct record",
+    dateIssued: "02/18/26",
+    status: "Processing",
+    fileUrl: "#",
+  },
+];
+
 function Toast({ toast }) {
   if (!toast) return null;
   return (
     <div
-      className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center space-x-2 ${toast.type === "error" ? "bg-red-600" : toast.type === "info" ? "bg-blue-600" : "bg-emerald-600"}`}
+      className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center space-x-2 ${toast.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}
     >
       <FileCheck className="w-5 h-5" />
       <span>{toast.message}</span>
@@ -40,26 +111,40 @@ function Toast({ toast }) {
   );
 }
 
-function Login({ handleLogin }) {
+function Login({ handleLogin, showToast }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (username === "student" && password === "student123") {
+      handleLogin("student");
+    } else if (username === "admin" && password === "admin123") {
+      handleLogin("admin");
+    } else {
+      showToast(
+        "Invalid credentials. Hint: use student/student123 or admin/admin123",
+        "error",
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-slate-50 font-sans">
-      <div className="md:w-1/2 bg-[#0F3EAB] text-white p-8 md:p-12 flex flex-col justify-between relative">
-        <div className="flex items-center space-x-4 z-10">
+      <div className="md:w-1/2 bg-[#0F3EAB] text-white p-8 md:p-12 flex flex-col justify-between">
+        <div className="flex items-center space-x-4">
           <img
             src="/cmu-logo.png"
             alt="CMU Logo"
-            className="w-16 h-16 object-contain drop-shadow-md bg-white rounded-full p-1"
+            className="w-16 h-16 object-contain bg-white rounded-full p-1"
           />
           <div>
-            <h1 className="text-2xl font-bold tracking-wide">
-              CITY OF MALABON
-            </h1>
-            <h1 className="text-2xl font-bold tracking-wide -mt-1">
-              UNIVERSITY
+            <h1 className="text-2xl md:text-3xl font-bold tracking-wide whitespace-nowrap">
+              CITY OF MALABON UNIVERSITY
             </h1>
           </div>
         </div>
-        <div className="my-12 z-10">
+        <div className="my-12">
           <h2 className="text-2xl md:text-3xl font-bold leading-snug mb-3">
             Student Document & Records Management System
           </h2>
@@ -70,21 +155,16 @@ function Login({ handleLogin }) {
           <h2 className="text-xl font-bold text-slate-800 text-center mb-6">
             PORTAL LOGIN
           </h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleLogin("student");
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <User className="absolute top-2.5 left-3 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Username"
-                defaultValue="student_2023"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2.5 border rounded-full text-sm"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
               />
             </div>
             <div className="relative">
@@ -92,26 +172,19 @@ function Login({ handleLogin }) {
               <input
                 type="password"
                 placeholder="Password"
-                defaultValue="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2.5 border rounded-full text-sm"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
               />
             </div>
-            <div className="pt-2 space-y-3">
+            <div className="pt-2">
               <button
                 type="submit"
-                className="w-full bg-[#0F3EAB] hover:bg-blue-800 text-white font-medium py-3 rounded-xl flex justify-center space-x-2 transition cursor-pointer"
+                className="w-full bg-[#0F3EAB] hover:bg-blue-800 text-white font-medium py-3 rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer"
               >
-                <LogOut className="w-5 h-5 rotate-180" />
-                <span>Login as Student</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLogin("admin")}
-                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-3 rounded-xl flex justify-center space-x-2 transition cursor-pointer"
-              >
-                <Shield className="w-5 h-5 text-amber-400" />
-                <span>Login as Registrar Admin</span>
+                <LogIn className="w-5 h-5" />
+                <span>Login to Portal</span>
               </button>
             </div>
           </form>
@@ -123,8 +196,10 @@ function Login({ handleLogin }) {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeView, setActiveView] = useState("my-records");
+  const [activeView, setActiveView] = useState("student-home");
   const [recordsTab, setRecordsTab] = useState("Academic Records");
+  const [adminTabFilter, setAdminTabFilter] = useState("All Requests");
+
   const [studentRecords, setStudentRecords] = useState(INITIAL_STUDENT_RECORDS);
   const [adminRequests, setAdminRequests] = useState(INITIAL_ADMIN_REQUESTS);
   const [toast, setToast] = useState(null);
@@ -135,101 +210,161 @@ export default function App() {
   };
 
   const handleLogin = (role) => {
-    setCurrentUser(
-      role === "student"
-        ? { name: "Juan Dela Cruz", course: "BSIT", role: "student" }
-        : { name: "Admin Staff", course: "Registrar Admin", role: "admin" },
-    );
-    setActiveView(role === "student" ? "student-home" : "admin-home");
+    if (role === "student") {
+      setCurrentUser({
+        name: "Juan Dela Cruz",
+        course: "BSIT",
+        role: "student",
+      });
+      setActiveView("student-home");
+    } else {
+      setCurrentUser({
+        name: "Admin Staff",
+        course: "Registrar Admin",
+        role: "admin",
+      });
+      setActiveView("admin-home");
+    }
   };
 
-  if (!currentUser) return <Login handleLogin={handleLogin} />;
+  // Handles saving new document requests directly into state arrays
+  const handleCreateRequest = (requestData) => {
+    const newId = `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newRequest = {
+      id: newId,
+      studentName: currentUser?.name || "Juan Dela Cruz",
+      studentId: "2023-0142",
+      docType: requestData.docType,
+      purpose: requestData.purpose,
+      copies: requestData.copies,
+      delivery: requestData.delivery,
+      dateRequested: "Just Now",
+      status: "Submits",
+      clearanceFile: requestData.clearanceFile,
+      clearanceStatus: requestData.clearanceStatus || "Submitted for Review",
+    };
+
+    // Save to admin requests tracking list
+    setAdminRequests((prev) => [newRequest, ...prev]);
+
+    // Save to student records list
+    setStudentRecords((prev) => [
+      {
+        id: newId,
+        name: requestData.docType,
+        description: `Requested for ${requestData.purpose}`,
+        dateIssued: "Pending",
+        status: "Processing",
+        fileUrl: "#",
+      },
+      ...prev,
+    ]);
+
+    showToast(
+      "Document request submitted successfully with Student Clearance!",
+    );
+    setActiveView("my-records");
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-800">
       <Toast toast={toast} />
-      <Navbar currentUser={currentUser} setActiveView={setActiveView} />
-
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          currentUser={currentUser}
-          activeView={activeView}
-          setActiveView={setActiveView}
-          handleLogout={() => setCurrentUser(null)}
-        />
-
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-          {activeView === "my-records" && (
-            <StudentRecords
-              studentRecords={studentRecords}
+      {!currentUser ? (
+        <Login handleLogin={handleLogin} showToast={showToast} />
+      ) : (
+        <>
+          <Navbar currentUser={currentUser} setActiveView={setActiveView} />
+          <div className="flex-1 flex overflow-hidden">
+            <Sidebar
+              currentUser={currentUser}
+              activeView={activeView}
+              setActiveView={setActiveView}
               recordsTab={recordsTab}
               setRecordsTab={setRecordsTab}
+              adminTabFilter={adminTabFilter}
+              setAdminTabFilter={setAdminTabFilter}
+              handleLogout={() => setCurrentUser(null)}
               showToast={showToast}
             />
-          )}
-          {activeView === "document-request" && (
-            <DocumentRequest
-              setActiveView={setActiveView}
-              adminRequests={adminRequests}
-              setAdminRequests={setAdminRequests}
-              showToast={showToast}
-            />
-          )}
-          {activeView === "admin-requests" && (
-            <AdminPortal
-              adminRequests={adminRequests}
-              setAdminRequests={setAdminRequests}
-              showToast={showToast}
-            />
-          )}
-          {activeView === "profile" && (
-            <Profile currentUser={currentUser} showToast={showToast} />
-          )}
+            <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+              {activeView === "student-home" && (
+                <StudentDashboard
+                  currentUser={currentUser}
+                  adminRequests={adminRequests}
+                />
+              )}
+              {activeView === "admin-home" && (
+                <AdminDashboard adminRequests={adminRequests} />
+              )}
 
-          {activeView === "student-home" && (
-            <StudentDashboard
-              currentUser={currentUser}
-              adminRequests={adminRequests}
-            />
-          )}
-          {activeView === "admin-home" && (
-            <AdminDashboard adminRequests={adminRequests} />
-          )}
-          {activeView === "announcements" && <Announcements />}
-          {activeView === "track-requests" && (
-            <TrackRequests adminRequests={adminRequests} />
-          )}
+              {activeView === "my-records" && (
+                <StudentRecords
+                  studentRecords={studentRecords}
+                  recordsTab={recordsTab}
+                  setRecordsTab={setRecordsTab}
+                  showToast={showToast}
+                />
+              )}
 
-          {activeView === "help" && (
-            <PlaceholderView
-              title="Help & Support"
-              icon={HelpCircle}
-              desc="Contact the Registrar's Office at registrar@cmu.edu.ph or call (02) 8123-4567 for assistance."
-            />
-          )}
-          {activeView === "admin-students" && (
-            <PlaceholderView
-              title="Student Masterlist"
-              icon={Users}
-              desc="Database integration required to view the full student directory."
-            />
-          )}
-          {activeView === "admin-inventory" && (
-            <PlaceholderView
-              title="Document Inventory"
-              icon={Box}
-              desc="Manage document types, physical stock, and catalog requirements."
-            />
-          )}
-          {activeView === "settings" && (
-            <PlaceholderView
-              title="Account Settings"
-              icon={SettingsIcon}
-              desc="Update your password, notification preferences, and profile details here."
-            />
-          )}
-        </main>
-      </div>
+              {activeView === "document-request" && (
+                <DocumentRequest
+                  setActiveView={setActiveView}
+                  onSubmitRequest={handleCreateRequest}
+                  showToast={showToast}
+                />
+              )}
+
+              {activeView === "admin-requests" && (
+                <AdminPortal
+                  adminRequests={adminRequests}
+                  setAdminRequests={setAdminRequests}
+                  adminTabFilter={adminTabFilter}
+                  setAdminTabFilter={setAdminTabFilter}
+                  showToast={showToast}
+                />
+              )}
+
+              {activeView === "profile" && (
+                <Profile currentUser={currentUser} showToast={showToast} />
+              )}
+              {activeView === "announcements" && <Announcements />}
+              {activeView === "track-requests" && (
+                <TrackRequests adminRequests={adminRequests} />
+              )}
+
+              {/* Formatted placeholder headers */}
+              {activeView === "help" && (
+                <PlaceholderView
+                  title="Help & Support"
+                  icon={HelpCircle}
+                  desc="Contact the Registrar's Office at registrar@cmu.edu.ph for assistance."
+                />
+              )}
+              {activeView === "admin-students" && (
+                <PlaceholderView
+                  title="Student Masterlist Records"
+                  icon={Users}
+                  desc="Student directory and academic profiles management."
+                />
+              )}
+              {activeView === "admin-inventory" && (
+                <PlaceholderView
+                  title="Document Inventory Management"
+                  icon={Box}
+                  desc="Manage document catalog and requirement forms."
+                />
+              )}
+              {activeView === "settings" && (
+                <PlaceholderView
+                  title="Account & Portal Settings"
+                  icon={SettingsIcon}
+                  desc="Update system security and user preferences."
+                />
+              )}
+            </main>
+          </div>
+        </>
+      )}
     </div>
   );
 }
