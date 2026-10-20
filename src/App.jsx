@@ -10,9 +10,6 @@ import {
   Box,
   Settings as SettingsIcon,
   LogIn,
-  TrendingUp,
-  Folder,
-  ClipboardList,
 } from "lucide-react";
 import { Navbar, Sidebar } from "./components/Navigation";
 import StudentRecords from "./components/StudentRecords";
@@ -131,27 +128,27 @@ function Login({ handleLogin, showToast }) {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-slate-50 font-sans">
-      <div className="md:w-1/2 bg-[#0F3EAB] text-white p-8 md:p-12 flex flex-col justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="md:w-1/2 bg-[#0F3EAB] text-white p-6 md:p-12 flex flex-col justify-between">
+        <div className="flex items-center space-x-3 md:space-x-4">
           <img
             src="/cmu-logo.png"
             alt="CMU Logo"
-            className="w-16 h-16 object-contain bg-white rounded-full p-1"
+            className="w-12 h-12 md:w-16 md:h-16 object-contain bg-white rounded-full p-1"
           />
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-wide whitespace-nowrap">
+            <h1 className="text-lg md:text-3xl font-bold tracking-wide whitespace-nowrap">
               CITY OF MALABON UNIVERSITY
             </h1>
           </div>
         </div>
-        <div className="my-12">
-          <h2 className="text-2xl md:text-3xl font-bold leading-snug mb-3">
+        <div className="my-8 md:my-12">
+          <h2 className="text-xl md:text-3xl font-bold leading-snug mb-3">
             Student Document & Records Management System
           </h2>
         </div>
       </div>
       <div className="md:w-1/2 flex items-center justify-center p-6 bg-white">
-        <div className="w-full max-w-md border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div className="w-full max-w-md border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
           <h2 className="text-xl font-bold text-slate-800 text-center mb-6">
             PORTAL LOGIN
           </h2>
@@ -200,6 +197,9 @@ export default function App() {
   const [recordsTab, setRecordsTab] = useState("Academic Records");
   const [adminTabFilter, setAdminTabFilter] = useState("All Requests");
 
+  // Mobile drawer toggle state
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
   const [studentRecords, setStudentRecords] = useState(INITIAL_STUDENT_RECORDS);
   const [adminRequests, setAdminRequests] = useState(INITIAL_ADMIN_REQUESTS);
   const [toast, setToast] = useState(null);
@@ -227,7 +227,6 @@ export default function App() {
     }
   };
 
-  // Handles saving new document requests directly into state arrays
   const handleCreateRequest = (requestData) => {
     const newId = `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
     const newRequest = {
@@ -244,10 +243,8 @@ export default function App() {
       clearanceStatus: requestData.clearanceStatus || "Submitted for Review",
     };
 
-    // Save to admin requests tracking list
     setAdminRequests((prev) => [newRequest, ...prev]);
 
-    // Save to student records list
     setStudentRecords((prev) => [
       {
         id: newId,
@@ -273,8 +270,13 @@ export default function App() {
         <Login handleLogin={handleLogin} showToast={showToast} />
       ) : (
         <>
-          <Navbar currentUser={currentUser} setActiveView={setActiveView} />
-          <div className="flex-1 flex overflow-hidden">
+          <Navbar
+            currentUser={currentUser}
+            setActiveView={setActiveView}
+            isMobileOpen={isMobileOpen}
+            setIsMobileOpen={setIsMobileOpen}
+          />
+          <div className="flex-1 flex overflow-hidden relative">
             <Sidebar
               currentUser={currentUser}
               activeView={activeView}
@@ -285,8 +287,10 @@ export default function App() {
               setAdminTabFilter={setAdminTabFilter}
               handleLogout={() => setCurrentUser(null)}
               showToast={showToast}
+              isMobileOpen={isMobileOpen}
+              setIsMobileOpen={setIsMobileOpen}
             />
-            <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+            <main className="flex-1 w-full min-w-0 bg-slate-100 p-4 md:p-8 overflow-y-auto">
               {activeView === "student-home" && (
                 <StudentDashboard
                   currentUser={currentUser}
@@ -332,7 +336,6 @@ export default function App() {
                 <TrackRequests adminRequests={adminRequests} />
               )}
 
-              {/* Formatted placeholder headers */}
               {activeView === "help" && (
                 <PlaceholderView
                   title="Help & Support"
