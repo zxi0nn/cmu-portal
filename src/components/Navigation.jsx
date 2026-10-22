@@ -1,15 +1,8 @@
 import React from "react";
 import {
-  FileText,
-  Shield,
-  Search,
-  Filter,
   Bell,
-  Download,
-  Eye,
-  Upload,
-  Plus,
-  Minus,
+  ChevronDown,
+  User,
   LogOut,
   Home,
   Folder,
@@ -19,12 +12,8 @@ import {
   Users,
   Box,
   TrendingUp,
-  ChevronDown,
-  User,
-  Lock,
-  X,
-  FileCheck,
   Menu,
+  X,
 } from "lucide-react";
 
 export function Navbar({
@@ -36,11 +25,9 @@ export function Navbar({
   return (
     <header className="bg-[#0F3EAB] text-white h-16 flex items-center justify-between px-4 md:px-6 shadow-md z-20 sticky top-0">
       <div className="flex items-center space-x-3 md:space-x-4">
-        {/* Mobile Hamburger Menu Toggle Button */}
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
           className="md:hidden p-1.5 rounded-lg text-white hover:bg-blue-800 focus:outline-none transition cursor-pointer"
-          aria-label="Toggle Navigation Menu"
         >
           {isMobileOpen ? (
             <X className="w-6 h-6" />
@@ -109,7 +96,6 @@ export function Sidebar({
   adminTabFilter,
   setAdminTabFilter,
   handleLogout,
-  showToast,
   isMobileOpen,
   setIsMobileOpen,
 }) {
@@ -120,7 +106,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* Dark Backdrop Overlay on Mobile when Sidebar is open */}
       {isMobileOpen && (
         <div
           onClick={() => setIsMobileOpen(false)}
@@ -269,10 +254,12 @@ export function Sidebar({
                   <ChevronDown className="w-4 h-4" />
                 </button>
 
+                {/* Updated Admin Filter Tabs */}
                 <div className="pl-11 pr-2 py-1 space-y-1">
                   {[
                     "All Requests",
-                    "Submits",
+                    "Submitted",
+                    "Processing",
                     "For Release",
                     "Released",
                     "Cancelled",

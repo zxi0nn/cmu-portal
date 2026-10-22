@@ -4,64 +4,62 @@ import {
   Plus,
   Minus,
   Filter,
+  Upload,
   X,
   FileText,
-  Upload,
-  CheckCircle,
   Download,
-  ShieldAlert,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
-const DOCUMENT_CATALOG = [
+export const DOCUMENT_CATALOG = [
   {
-    category: "---- Documents ----",
-    items: ["Honorable Dismissal", "Form 137", "Diploma"],
-  },
-  {
-    category: "---- Certificates & Clearances ----",
+    category: "Certificates & Clearances",
     items: [
       "Certificate of Enrollment",
       "Certificate of Grades",
-      "Certificate of Good Moral",
       "Transcript of Records",
-      "Student Clearance",
+      "Certificate of Good Moral",
     ],
+  },
+  {
+    category: "Official Graduation & Transfer Records",
+    items: ["Honorable Dismissal", "Form 137", "Diploma"],
   },
 ];
 
 export default function DocumentRequest({
   setActiveView,
   onSubmitRequest,
+  adminRequests = [],
   showToast,
 }) {
   const [selectedDocs, setSelectedDocs] = useState({});
   const [purpose, setPurpose] = useState("");
   const [delivery, setDelivery] = useState("Pick-up");
-  const [submitting, setSubmitting] = useState(false);
 
-  // Clearance Modal and Upload States
-  const [showClearanceModal, setShowClearanceModal] = useState(false);
-  const [uploadedClearance, setUploadedClearance] = useState(null);
-
-  // Pre-filled Student Info for CMU Clearance Form MCG-CMU-OUR-FO-001
-  const [clearanceForm, setClearanceForm] = useState({
-    dateOfApplication: new Date().toISOString().split("T")[0],
-    title: "Mr.",
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [modalForm, setModalForm] = useState({
+    dateOfApplication: "2026-10-20",
+    studentId: "2023-0142",
+    salutation: "Mr.",
     lastName: "Dela Cruz",
     firstName: "Juan",
     middleName: "Gonzales",
-    maidenName: "N/A",
-    studentNo: "2023-0142",
-    address: "Malabon City, Metro Manila",
-    dob: "2002-05-14",
-    pob: "Malabon City",
-    accountName: "juandelacruz@gmail.com",
-    contactNo: "09123456789",
     program: "BSIT",
-    lastSemAttended: "1st Sem AY 2025-2026",
-    schoolLastAttended: "Malabon National High School",
-    yearGraduated: "N/A",
+    lastSemester: "1st Sem AY 2025-2026",
   });
+  const [clearanceFile, setClearanceFile] = useState(null);
+
+  // Check historical requests for document type fee evaluation
+  const hasRequestedBefore = (docName) => {
+    return adminRequests.some(
+      (req) =>
+        req.docType?.toLowerCase().includes(docName.toLowerCase()) &&
+        req.status !== "Cancelled",
+    );
+  };
 
   const handleToggleDoc = (docName) => {
     const updated = { ...selectedDocs };
@@ -73,194 +71,153 @@ export default function DocumentRequest({
     setSelectedDocs(updated);
   };
 
-  const handleUpdateCopies = (docName, amount) => {
+  const handleUpdateCopies = (docName, delta) => {
+    if (!selectedDocs[docName]) return;
     const current = selectedDocs[docName].copies;
-    if (current + amount > 0) {
+    const newCount = current + delta;
+    if (newCount >= 1) {
       setSelectedDocs({
         ...selectedDocs,
-        [docName]: { copies: current + amount },
+        [docName]: { copies: newCount },
       });
     }
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setUploadedClearance(file);
-      showToast("Clearance PDF attached successfully!", "success");
+  const selectedDocKeys = Object.keys(selectedDocs);
+
+  // Calculate itemized fees: 1st request 1st copy is FREE; extra copies & repeat requests are ₱50/copy
+  const calculatedItems = selectedDocKeys.map((docName) => {
+    const copies = selectedDocs[docName].copies;
+    const isRepeat = hasRequestedBefore(docName);
+
+    let itemFee = 0;
+    if (isRepeat) {
+      itemFee = copies * 50;
+    } else {
+      itemFee = Math.max(0, copies - 1) * 50;
     }
-  };
 
-  const handleInitiateRequest = (e) => {
+    return {
+      docName,
+      copies,
+      isRepeat,
+      itemFee,
+    };
+  });
+
+  const totalFee = calculatedItems.reduce((sum, item) => sum + item.itemFee, 0);
+
+  // Trigger Pop-up Modal when student clicks initial Submit
+  const handleOpenModalPrompt = (e) => {
     e.preventDefault();
-    const docNames = Object.keys(selectedDocs);
 
-    if (docNames.length === 0 || !purpose) {
-      showToast("Please select at least one document and a purpose.", "error");
+    if (selectedDocKeys.length === 0) {
+      showToast("Please select at least one document to request.", "error");
       return;
     }
 
-    // Opens the Clearance Modal step
-    setShowClearanceModal(true);
-  };
-
-  // Generates and downloads a real .pdf file directly to the student's Downloads folder
-  const handleDownloadClearancePDF = () => {
-    showToast("Generating PDF Clearance Form...", "info");
-
-    const element = document.createElement("div");
-    element.style.padding = "24px";
-    element.style.fontFamily = "Arial, sans-serif";
-    element.style.color = "#1e293b";
-    element.style.backgroundColor = "#ffffff";
-
-    element.innerHTML = `
-      <div style="text-align: center; border-bottom: 2px solid #0F3EAB; padding-bottom: 12px; margin-bottom: 16px;">
-        <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase;">REPUBLIC OF THE PHILIPPINES • CITY OF MALABON</p>
-        <h1 style="color: #0F3EAB; margin: 4px 0; font-size: 20px; font-weight: bold;">CITY OF MALABON UNIVERSITY</h1>
-        <p style="margin: 0; font-size: 12px; font-weight: bold; color: #334155;">STUDENT CLEARANCE (Form MCG-CMU-OUR-FO-001)</p>
-      </div>
-
-      <div style="background: #0F3EAB; color: white; padding: 5px 10px; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-top: 15px; border-radius: 4px;">
-        Student Personal Information
-      </div>
-      <table style="width: 100%; margin-top: 8px; font-size: 11px; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Date of Application: <span style="color: #0f172a;">${clearanceForm.dateOfApplication}</span></td>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Student ID No.: <span style="color: #0f172a;">${clearanceForm.studentNo}</span></td>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Title: <span style="color: #0f172a;">${clearanceForm.title}</span></td>
-        </tr>
-        <tr>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Last Name: <span style="color: #0f172a;">${clearanceForm.lastName}</span></td>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">First Name: <span style="color: #0f172a;">${clearanceForm.firstName}</span></td>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Middle Name: <span style="color: #0f172a;">${clearanceForm.middleName}</span></td>
-        </tr>
-      </table>
-
-      <div style="background: #0F3EAB; color: white; padding: 5px 10px; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-top: 15px; border-radius: 4px;">
-        Academic Information
-      </div>
-      <table style="width: 100%; margin-top: 8px; font-size: 11px; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Program / Course: <span style="color: #0f172a;">${clearanceForm.program}</span></td>
-          <td style="padding: 4px; font-weight: bold; color: #475569;">Last Semester Attended: <span style="color: #0f172a;">${clearanceForm.lastSemAttended}</span></td>
-        </tr>
-      </table>
-
-      <div style="background: #0F3EAB; color: white; padding: 5px 10px; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-top: 15px; border-radius: 4px;">
-        Required Office Clearances
-      </div>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px;">
-        <thead>
-          <tr style="background-color: #f8fafc;">
-            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Office / Department</th>
-            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Status</th>
-            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 40%;">Signature / Stamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td style="border: 1px solid #cbd5e1; padding: 8px;">University Library</td><td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #059669; font-weight: bold;">CLEARED</td><td style="border: 1px solid #cbd5e1; padding: 8px;"></td></tr>
-          <tr><td style="border: 1px solid #cbd5e1; padding: 8px;">Office of the Student Affairs</td><td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #059669; font-weight: bold;">CLEARED</td><td style="border: 1px solid #cbd5e1; padding: 8px;"></td></tr>
-          <tr><td style="border: 1px solid #cbd5e1; padding: 8px;">Finance Office</td><td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #059669; font-weight: bold;">CLEARED</td><td style="border: 1px solid #cbd5e1; padding: 8px;"></td></tr>
-          <tr><td style="border: 1px solid #cbd5e1; padding: 8px;">Program Chair</td><td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #059669; font-weight: bold;">CLEARED</td><td style="border: 1px solid #cbd5e1; padding: 8px;"></td></tr>
-          <tr><td style="border: 1px solid #cbd5e1; padding: 8px;">Dean</td><td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #059669; font-weight: bold;">CLEARED</td><td style="border: 1px solid #cbd5e1; padding: 8px;"></td></tr>
-        </tbody>
-      </table>
-
-      <table style="width: 100%; margin-top: 60px; font-size: 11px;">
-        <tr>
-          <td style="text-align: center; width: 45%;">
-            <div style="border-top: 1px solid #334155; padding-top: 4px; font-weight: bold;">Signature over Printed Name of Student</div>
-          </td>
-          <td style="width: 10%;"></td>
-          <td style="text-align: center; width: 45%;">
-            <div style="border-top: 1px solid #334155; padding-top: 4px; font-weight: bold;">Registrar Authorized Representative</div>
-          </td>
-        </tr>
-      </table>
-    `;
-
-    const generateAndSavePDF = () => {
-      const opt = {
-        margin: 0.3,
-        filename: `CMU_Student_Clearance_${clearanceForm.studentNo}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, logging: false },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-      };
-
-      window
-        .html2pdf()
-        .set(opt)
-        .from(element)
-        .save()
-        .then(() => {
-          showToast(
-            "Clearance Form saved as PDF to your Downloads folder!",
-            "success",
-          );
-        });
-    };
-
-    if (window.html2pdf) {
-      generateAndSavePDF();
-    } else {
-      const script = document.createElement("script");
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-      script.onload = () => {
-        generateAndSavePDF();
-      };
-      document.body.appendChild(script);
+    if (!purpose) {
+      showToast("Please select a purpose for your request.", "error");
+      return;
     }
+
+    setShowModal(true);
   };
 
-  const handleFinalSubmit = async () => {
-    if (!uploadedClearance) {
+  // Finalize Submission from inside Pop-Up Modal
+  const handleFinalBatchSubmit = () => {
+    if (!clearanceFile) {
       showToast(
-        "Please attach your filled Student Clearance PDF to proceed.",
+        "Please attach your signed Student Clearance PDF before submitting.",
         "error",
       );
       return;
     }
 
-    setSubmitting(true);
-    const docNames = Object.keys(selectedDocs);
-    const formattedDocs = docNames
-      .map((doc) => `${doc} (${selectedDocs[doc].copies})`)
+    const docTypeSummary = calculatedItems
+      .map(
+        (item) =>
+          `${item.docName} (${item.copies} ${item.copies > 1 ? "copies" : "copy"})`,
+      )
       .join(", ");
-    const totalCopies = Object.values(selectedDocs).reduce(
-      (sum, doc) => sum + doc.copies,
-      0,
+
+    const payload = {
+      docType: docTypeSummary,
+      purpose,
+      delivery,
+      fee: totalFee,
+      items: calculatedItems,
+      copies: calculatedItems.reduce((acc, curr) => acc + curr.copies, 0),
+      clearanceFile: clearanceFile.name,
+      clearanceStatus: "Submitted for Review",
+      studentDetails: modalForm,
+    };
+
+    onSubmitRequest(payload);
+    setShowModal(false);
+  };
+
+  // Dynamic Browser PDF Download Trigger
+  const handleSaveClearancePDF = () => {
+    const clearanceText = `
+================================================================================
+                        CITY OF MALABON UNIVERSITY
+                        OFFICIAL STUDENT CLEARANCE
+================================================================================
+
+APPLICATION DETAILS:
+--------------------------------------------------------------------------------
+Date of Application : ${modalForm.dateOfApplication}
+Student ID Number   : ${modalForm.studentId}
+Salutation / Name   : ${modalForm.salutation} ${modalForm.firstName} ${modalForm.middleName} ${modalForm.lastName}
+Program / Course    : ${modalForm.program}
+Last Term Attended  : ${modalForm.lastSemester}
+
+DEPARTMENT CLEARANCE VERIFICATIONS:
+--------------------------------------------------------------------------------
+[✓] University Library         : APPROVED / CLEARED
+[✓] Office of Student Affairs  : APPROVED / CLEARED
+[✓] Finance Office             : APPROVED / CLEARED
+[✓] Program Chair              : APPROVED / CLEARED
+[✓] Dean                       : APPROVED / CLEARED
+
+REQUESTED DOCUMENTS SUMMARY:
+--------------------------------------------------------------------------------
+${calculatedItems.map((item, idx) => `${idx + 1}.${item.docName} - ${item.copies} copy(ies) [Fee:${item.itemFee === 0 ? "FREE" : `₱${item.itemFee}.00`}]`).join("\n")}
+
+Total Fee Standing: ${totalFee === 0 ? "FREE (1st Request)" : `₱${totalFee}.00`}
+
+--------------------------------------------------------------------------------
+AUTHORIZATION & SIGNATURES:
+--------------------------------------------------------------------------------
+
+Student Signature: ___________________________   Date: ______________
+
+Registrar Officer: ___________________________   Date: ______________
+
+================================================================================
+           Official Copy Generated by CMU Registrar Student Portal
+================================================================================
+`;
+
+    const blob = new Blob([clearanceText], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const filename = `CMU_Clearance_${modalForm.lastName.replace(/\s+/g, "_")}_${modalForm.studentId}.pdf`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(
+      `Downloaded ${filename}! Attach this file below to complete submission.`,
     );
-
-    if (onSubmitRequest) {
-      await onSubmitRequest({
-        purpose: purpose,
-        copies: totalCopies,
-        delivery: delivery,
-        docType: formattedDocs,
-        clearanceFile: uploadedClearance.name,
-        clearanceStatus: "Submitted for Review",
-      });
-    } else {
-      showToast(
-        "Document request submitted successfully with Clearance!",
-        "success",
-      );
-      setActiveView("my-records");
-    }
-
-    setSubmitting(false);
-    setShowClearanceModal(false);
-    setSelectedDocs({});
-    setPurpose("");
-    setDelivery("Pick-up");
-    setUploadedClearance(null);
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 relative">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-[#0F3EAB] text-white rounded-lg shadow-sm">
@@ -271,413 +228,485 @@ export default function DocumentRequest({
               Document Request
             </h1>
             <p className="text-xs text-slate-500">
-              Select documents and submit required clearance for processing.
+              Select documents, set copy counts, and verify clearance on
+              submission.
             </p>
           </div>
         </div>
+
         <button
-          onClick={() => setActiveView("my-records")}
+          onClick={() => setActiveView("track-requests")}
           className="flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-full text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm cursor-pointer"
         >
           <ClipboardList className="w-3.5 h-3.5" />
-          <span>View my requests</span>
+          <span>Track my requests</span>
         </button>
       </div>
 
-      <form
-        onSubmit={handleInitiateRequest}
-        className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 space-y-6 shadow-sm"
-      >
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-3">
-            Select Documents Needed <span className="text-red-500">*</span>
-          </label>
-          <div className="space-y-4">
-            {DOCUMENT_CATALOG.map((group) => (
-              <div
-                key={group.category}
-                className="border border-slate-200 rounded-xl p-4 bg-slate-50"
-              >
-                <div className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">
-                  {group.category}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {group.items.map((doc) => (
-                    <div
-                      key={doc}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
-                        selectedDocs[doc]
-                          ? "bg-blue-50 border-blue-300"
-                          : "bg-white border-slate-200"
-                      }`}
-                    >
-                      <label className="flex items-center space-x-3 cursor-pointer flex-1">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedDocs[doc]}
-                          onChange={() => handleToggleDoc(doc)}
-                          className="w-4 h-4 text-[#0F3EAB] rounded border-slate-300"
-                        />
-                        <span className="text-sm font-semibold text-slate-700">
-                          {doc}
-                        </span>
-                      </label>
-                      {selectedDocs[doc] && (
-                        <div className="flex items-center space-x-2 bg-white border border-slate-300 rounded-md px-2 py-1">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateCopies(doc, -1)}
-                            className="p-1 hover:bg-slate-100 text-slate-600 rounded cursor-pointer"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="text-xs font-bold w-4 text-center text-slate-800">
-                            {selectedDocs[doc].copies}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateCopies(doc, 1)}
-                            className="p-1 hover:bg-slate-100 text-slate-600 rounded cursor-pointer"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Main Request Form */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+        <form onSubmit={handleOpenModalPrompt} className="space-y-6">
+          {/* Multi-Document Selection Grid */}
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
+            <label className="block text-xs font-bold text-slate-800 mb-1">
+              Select Document(s) & Set Copy Count{" "}
+              <span className="text-red-500">*</span>
+            </label>
+            <p className="text-[11px] text-slate-500 mb-3">
+              Check the documents you need and adjust the copy count for each
+              document.
+            </p>
+
+            <div className="space-y-4">
+              {DOCUMENT_CATALOG.map((group) => (
+                <div
+                  key={group.category}
+                  className="border border-slate-200 rounded-xl p-4 bg-slate-50/60"
+                >
+                  <div className="text-xs font-bold text-[#0F3EAB] uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                    <FileText className="w-4 h-4 text-[#0F3EAB]" />
+                    <span>{group.category}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {group.items.map((docName) => {
+                      const isSelected = !!selectedDocs[docName];
+                      const isRepeat = hasRequestedBefore(docName);
+                      const currentCopies = selectedDocs[docName]?.copies || 1;
+
+                      return (
+                        <div
+                          key={docName}
+                          className={`p-3.5 rounded-xl border transition flex flex-col justify-between space-y-2 ${
+                            isSelected
+                              ? "bg-blue-50/80 border-blue-400 shadow-xs"
+                              : "bg-white border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <label className="flex items-start space-x-2.5 cursor-pointer select-none flex-1 pr-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleDoc(docName)}
+                                className="mt-0.5 w-4 h-4 text-[#0F3EAB] rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                              />
+                              <div>
+                                <span className="text-xs font-bold text-slate-800 block">
+                                  {docName}
+                                </span>
+                                <span
+                                  className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.2 rounded-full ${
+                                    isRepeat
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-emerald-100 text-emerald-800"
+                                  }`}
+                                >
+                                  {isRepeat
+                                    ? "💳 Repeat Request (₱50/copy)"
+                                    : "🆓 1st Request (1st Copy FREE)"}
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+
+                          {isSelected && (
+                            <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-slate-600">
+                                Copies needed:
+                              </span>
+                              <div className="inline-flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden shadow-xs">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleUpdateCopies(docName, -1)
+                                  }
+                                  className="px-2.5 py-1 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="px-3 py-0.5 text-xs font-bold text-slate-800">
+                                  {currentCopies}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateCopies(docName, 1)}
+                                  className="px-2.5 py-1 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Itemized Fee Breakdown Summary */}
+          {selectedDocKeys.length > 0 && (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 space-y-3">
+              <h3 className="text-xs font-bold text-slate-800 border-b border-slate-200 pb-2 flex items-center justify-between">
+                <span>Selected Documents Fee Summary</span>
+                <span className="text-[#0F3EAB] font-extrabold text-sm">
+                  Total: {totalFee === 0 ? "FREE" : `₱${totalFee}.00`}
+                </span>
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                {calculatedItems.map((item) => (
+                  <div
+                    key={item.docName}
+                    className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0"
+                  >
+                    <div>
+                      <span className="font-semibold text-slate-800">
+                        {item.docName}
+                      </span>
+                      <span className="text-slate-500 ml-2">
+                        ({item.copies} {item.copies > 1 ? "copies" : "copy"})
+                      </span>
+                      <span className="ml-2 text-[10px] text-slate-400">
+                        {item.isRepeat
+                          ? "• Subsequent Request"
+                          : "• 1st Request (1st copy Free)"}
+                      </span>
+                    </div>
+                    <span className="font-bold text-slate-700">
+                      {item.itemFee === 0 ? "FREE" : `₱${item.itemFee}.00`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Purpose Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               Purpose <span className="text-red-500">*</span>
             </label>
             <select
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
-              className="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-full text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
               required
             >
               <option value="">-- Select Purpose --</option>
-              <option value="Transfer Application">Transfer Application</option>
+              <option value="Scholarship Application">
+                Scholarship Application
+              </option>
               <option value="Employment Requirement">
                 Employment Requirement
               </option>
               <option value="Board Exam Requirement">
                 Board Exam Requirement
               </option>
-              <option value="Scholarship Application">
-                Scholarship Application
-              </option>
+              <option value="Transfer Application">Transfer Application</option>
               <option value="Personal Copy">Personal Copy</option>
             </select>
           </div>
 
+          {/* Delivery Options */}
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
+            <label className="block text-xs font-semibold text-slate-700 mb-2">
               Delivery Method <span className="text-red-500">*</span>
             </label>
-            <select
-              value={delivery}
-              onChange={(e) => setDelivery(e.target.value)}
-              className="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
-            >
-              <option value="Pick-up">Pick-up at Registrar's Office</option>
-              <option value="Email">Email Digital Copy</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="pt-2 flex items-center space-x-4">
-          <button
-            type="submit"
-            className="px-6 py-2.5 bg-[#0F3EAB] hover:bg-blue-800 text-white font-medium rounded-xl text-xs flex items-center space-x-2 shadow-sm transition cursor-pointer"
-          >
-            <FileText className="w-4 h-4" />
-            <span>Proceed to Student Clearance</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedDocs({});
-              setPurpose("");
-              setDelivery("Pick-up");
-            }}
-            className="px-6 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-xs flex items-center space-x-1.5 transition cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-            <span>Clear Form</span>
-          </button>
-        </div>
-      </form>
-
-      {/* --- CMU STUDENT CLEARANCE MODAL --- */}
-      {showClearanceModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
-            <div className="border-b pb-4 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <img
-                  src="/cmu-logo.png"
-                  alt="CMU Logo"
-                  className="w-12 h-12 object-contain"
+            <div className="space-y-2 text-xs">
+              <label className="flex items-center space-x-2.5 text-slate-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="delivery"
+                  value="Pick-up"
+                  checked={delivery === "Pick-up"}
+                  onChange={(e) => setDelivery(e.target.value)}
+                  className="text-[#0F3EAB] focus:ring-blue-500"
                 />
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Republic of the Philippines • City of Malabon
-                  </div>
-                  <h2 className="text-lg font-bold text-[#0F3EAB]">
-                    CITY OF MALABON UNIVERSITY
-                  </h2>
-                  <p className="text-xs font-semibold text-slate-600">
-                    STUDENT CLEARANCE (Form MCG-CMU-OUR-FO-001)
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowClearanceModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                <span>Pick-up (Registrar's Office)</span>
+              </label>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start space-x-2">
-              <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <label className="flex items-center space-x-2.5 text-slate-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="delivery"
+                  value="Email"
+                  checked={delivery === "Email"}
+                  onChange={(e) => setDelivery(e.target.value)}
+                  className="text-[#0F3EAB] focus:ring-blue-500"
+                />
+                <span>Email (Official University Email)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="pt-4 flex items-center space-x-4">
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#0F3EAB] hover:bg-blue-800 text-white font-medium rounded-xl text-xs flex items-center space-x-2 shadow-sm transition cursor-pointer"
+            >
+              <Filter className="w-3.5 h-3.5 rotate-90" />
               <span>
-                Every document request requires a completed Student Clearance
-                form. Verify your information, download the PDF file to your
-                computer, and attach your signed copy before submitting.
+                Submit Request ({selectedDocKeys.length} Doc
+                {selectedDocKeys.length !== 1 ? "s" : ""} •{" "}
+                {totalFee === 0 ? "FREE" : `₱${totalFee}.00`})
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDocs({});
+                setPurpose("");
+                setDelivery("Pick-up");
+              }}
+              className="px-6 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-xs flex items-center space-x-1.5 transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear Form</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* POP-UP MODAL PROMPT FOR STUDENT CLEARANCE FORM */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 md:p-8 space-y-5 animate-fadeIn my-8">
+            {/* Top Warning Banner */}
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-start space-x-2.5">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="leading-snug">
+                Every document request requires a completed Student Clearance
+                form. Verify your information below, save the form, and attach
+                your signed copy before submitting.
+              </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="text-xs font-bold text-white bg-[#0F3EAB] px-3 py-1.5 rounded-md uppercase tracking-wider">
-                Student Personal Information
+            {/* Student Personal Information Header & Fields */}
+            <div className="space-y-3">
+              <div className="bg-[#0F3EAB] text-white text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-lg">
+                STUDENT PERSONAL INFORMATION
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Date of Application
                   </label>
                   <input
                     type="date"
-                    value={clearanceForm.dateOfApplication}
+                    value={modalForm.dateOfApplication}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
+                      setModalForm({
+                        ...modalForm,
                         dateOfApplication: e.target.value,
                       })
                     }
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800 focus:outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Student ID No.
                   </label>
                   <input
                     type="text"
-                    value={clearanceForm.studentNo}
-                    readOnly
-                    className="w-full p-2 border rounded-lg bg-slate-100 font-bold"
+                    value={modalForm.studentId}
+                    onChange={(e) =>
+                      setModalForm({ ...modalForm, studentId: e.target.value })
+                    }
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-800 font-bold"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Title / Salutation
                   </label>
                   <select
-                    value={clearanceForm.title}
+                    value={modalForm.salutation}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
-                        title: e.target.value,
-                      })
+                      setModalForm({ ...modalForm, salutation: e.target.value })
                     }
-                    className="w-full p-2 border rounded-lg bg-white"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800"
                   >
                     <option value="Mr.">Mr.</option>
                     <option value="Ms.">Ms.</option>
+                    <option value="Mrs.">Mrs.</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Last Name (Surname)
                   </label>
                   <input
                     type="text"
-                    value={clearanceForm.lastName}
+                    value={modalForm.lastName}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
-                        lastName: e.target.value,
-                      })
+                      setModalForm({ ...modalForm, lastName: e.target.value })
                     }
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     First Name
                   </label>
                   <input
                     type="text"
-                    value={clearanceForm.firstName}
+                    value={modalForm.firstName}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
-                        firstName: e.target.value,
-                      })
+                      setModalForm({ ...modalForm, firstName: e.target.value })
                     }
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Middle Name
                   </label>
                   <input
                     type="text"
-                    value={clearanceForm.middleName}
+                    value={modalForm.middleName}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
-                        middleName: e.target.value,
-                      })
+                      setModalForm({ ...modalForm, middleName: e.target.value })
                     }
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="text-xs font-bold text-white bg-[#0F3EAB] px-3 py-1.5 rounded-md uppercase tracking-wider">
-                Academic Information
+            {/* Academic Information Header & Fields */}
+            <div className="space-y-3">
+              <div className="bg-[#0F3EAB] text-white text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-lg">
+                ACADEMIC INFORMATION
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Program / Course
                   </label>
                   <input
                     type="text"
-                    value={clearanceForm.program}
+                    value={modalForm.program}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
-                        program: e.target.value,
-                      })
+                      setModalForm({ ...modalForm, program: e.target.value })
                     }
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     Last Semester/Academic Year Attended
                   </label>
                   <input
                     type="text"
-                    value={clearanceForm.lastSemAttended}
+                    value={modalForm.lastSemester}
                     onChange={(e) =>
-                      setClearanceForm({
-                        ...clearanceForm,
-                        lastSemAttended: e.target.value,
+                      setModalForm({
+                        ...modalForm,
+                        lastSemester: e.target.value,
                       })
                     }
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-800"
                   />
                 </div>
               </div>
 
-              <div className="border rounded-xl p-4 bg-slate-50 space-y-2 text-xs">
-                <span className="font-bold text-slate-700 block mb-1">
+              {/* Office Clearances Indicators */}
+              <div className="p-3.5 border border-slate-300 rounded-xl bg-slate-50 space-y-2">
+                <span className="text-xs font-bold text-slate-700 block">
                   Required Office Clearances:
                 </span>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-slate-600">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-medium text-slate-700">
+                  <div className="flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>University Library</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Office of Student Affairs</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Finance Office</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Program Chair</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Dean</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="border-t pt-4 space-y-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={handleDownloadClearancePDF}
-                  className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs flex items-center justify-center space-x-2 border transition cursor-pointer"
-                >
-                  <Download className="w-4 h-4 text-blue-700" />
-                  <span>Save Clearance PDF</span>
-                </button>
+            <hr className="border-slate-200" />
 
-                <div className="w-full sm:w-auto flex items-center space-x-2">
-                  <label className="cursor-pointer bg-blue-50 border border-blue-300 hover:bg-blue-100 text-[#0F3EAB] px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition">
-                    <Upload className="w-4 h-4" />
-                    <span>
-                      {uploadedClearance
-                        ? uploadedClearance.name
-                        : "Attach Signed Clearance PDF"}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.png"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
+            {/* Bottom Modal Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+              <button
+                type="button"
+                onClick={handleSaveClearancePDF}
+                className="w-full sm:w-auto px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center space-x-2 transition cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-slate-600" />
+                <span>Save Clearance PDF</span>
+              </button>
 
-              <div className="flex items-center justify-end space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowClearanceModal(false)}
-                  className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-medium hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFinalSubmit}
-                  disabled={submitting || !uploadedClearance}
-                  className={`px-6 py-2.5 text-white font-bold rounded-xl text-xs flex items-center space-x-2 transition shadow-md cursor-pointer ${
-                    uploadedClearance
-                      ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-slate-400 cursor-not-allowed"
-                  }`}
-                >
-                  <Filter className="w-3.5 h-3.5 rotate-90" />
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <label className="flex-1 sm:flex-none px-4 py-2 bg-blue-50 border border-blue-300 hover:bg-blue-100 text-[#0F3EAB] rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs">
+                  <Upload className="w-4 h-4" />
                   <span>
-                    {submitting ? "Submitting..." : "Submit Batch Request"}
+                    {clearanceFile
+                      ? clearanceFile.name
+                      : "Attach Signed Clearance PDF"}
                   </span>
-                </button>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        setClearanceFile(e.target.files[0]);
+                        showToast(`Attached: ${e.target.files[0].name}`);
+                      }
+                    }}
+                  />
+                </label>
               </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-5 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleFinalBatchSubmit}
+                className="px-6 py-2.5 bg-[#0F3EAB] hover:bg-blue-800 text-white font-bold rounded-xl text-xs flex items-center space-x-2 shadow-md transition cursor-pointer"
+              >
+                <Filter className="w-3.5 h-3.5 rotate-90" />
+                <span>Submit Batch Request</span>
+              </button>
             </div>
           </div>
         </div>

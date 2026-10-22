@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import {
   User,
   Lock,
-  Shield,
-  LogOut,
   FileCheck,
   HelpCircle,
   Users,
@@ -29,27 +27,37 @@ const INITIAL_ADMIN_REQUESTS = [
     id: "REQ-1001",
     studentName: "Juan Dela Cruz",
     studentId: "2023-0142",
-    docType: "Certificate of Enrollment (1)",
+    docType: "Certificate of Enrollment (1 copy)",
     purpose: "Scholarship Application",
     copies: 1,
     delivery: "Pick-up",
     dateRequested: "May 02, 2026",
-    status: "Submits",
-    clearanceFile: "CMU_Clearance_Juan.pdf",
-    clearanceStatus: "Approved",
+    status: "Submitted",
+    fee: 0,
   },
   {
     id: "REQ-1002",
     studentName: "Maria Santos",
     studentId: "2022-0891",
-    docType: "Transcript of Records (1)",
+    docType: "Transcript of Records (1 copy)",
     purpose: "Employment Requirement",
     copies: 1,
     delivery: "Email",
     dateRequested: "May 05, 2026",
+    status: "Processing",
+    fee: 50,
+  },
+  {
+    id: "REQ-1003",
+    studentName: "Mark Reyes",
+    studentId: "2023-0512",
+    docType: "Certificate of Good Moral (2 copies)",
+    purpose: "Transfer Application",
+    copies: 2,
+    delivery: "Pick-up",
+    dateRequested: "May 08, 2026",
     status: "For Release",
-    clearanceFile: "CMU_Clearance_Maria.pdf",
-    clearanceStatus: "Approved",
+    fee: 50,
   },
 ];
 
@@ -100,7 +108,13 @@ function Toast({ toast }) {
   if (!toast) return null;
   return (
     <div
-      className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center space-x-2 ${toast.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}
+      className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center space-x-2 ${
+        toast.type === "error"
+          ? "bg-red-600"
+          : toast.type === "info"
+            ? "bg-blue-600"
+            : "bg-emerald-600"
+      }`}
     >
       <FileCheck className="w-5 h-5" />
       <span>{toast.message}</span>
@@ -145,8 +159,18 @@ function Login({ handleLogin, showToast }) {
           <h2 className="text-xl md:text-3xl font-bold leading-snug mb-3">
             Student Document & Records Management System
           </h2>
+          <p className="text-blue-200 text-xs md:text-sm">
+            Official Web-Based Portal for Student Clearances, Document Requests,
+            and Academic Records.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 border-t border-blue-600/40 pt-4 text-center text-xs text-blue-200">
+          <div>Digital Records</div>
+          <div>Secure Tracking</div>
+          <div>Fee Transparency</div>
         </div>
       </div>
+
       <div className="md:w-1/2 flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-md border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
           <h2 className="text-xl font-bold text-slate-800 text-center mb-6">
@@ -157,7 +181,7 @@ function Login({ handleLogin, showToast }) {
               <User className="absolute top-2.5 left-3 w-5 h-5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Username"
+                placeholder="Username (student / admin)"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -168,7 +192,7 @@ function Login({ handleLogin, showToast }) {
               <Lock className="absolute top-2.5 left-3 w-5 h-5 text-slate-400" />
               <input
                 type="password"
-                placeholder="Password"
+                placeholder="Password (student123 / admin123)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -196,8 +220,6 @@ export default function App() {
   const [activeView, setActiveView] = useState("student-home");
   const [recordsTab, setRecordsTab] = useState("Academic Records");
   const [adminTabFilter, setAdminTabFilter] = useState("All Requests");
-
-  // Mobile drawer toggle state
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const [studentRecords, setStudentRecords] = useState(INITIAL_STUDENT_RECORDS);
@@ -237,10 +259,10 @@ export default function App() {
       purpose: requestData.purpose,
       copies: requestData.copies,
       delivery: requestData.delivery,
+      fee: requestData.fee,
       dateRequested: "Just Now",
-      status: "Submits",
+      status: "Submitted", // Updated status name
       clearanceFile: requestData.clearanceFile,
-      clearanceStatus: requestData.clearanceStatus || "Submitted for Review",
     };
 
     setAdminRequests((prev) => [newRequest, ...prev]);
@@ -258,9 +280,18 @@ export default function App() {
     ]);
 
     showToast(
-      "Document request submitted successfully with Student Clearance!",
+      `Request submitted! Total Fee: ${requestData.fee === 0 ? "FREE (1st Request)" : `₱${requestData.fee}.00`}`,
     );
-    setActiveView("my-records");
+    setActiveView("track-requests");
+  };
+
+  const handleCancelRequest = (reqId) => {
+    setAdminRequests((prev) =>
+      prev.map((item) =>
+        item.id === reqId ? { ...item, status: "Cancelled" } : item,
+      ),
+    );
+    showToast(`Request ${reqId} has been cancelled successfully.`, "info");
   };
 
   return (
@@ -286,7 +317,6 @@ export default function App() {
               adminTabFilter={adminTabFilter}
               setAdminTabFilter={setAdminTabFilter}
               handleLogout={() => setCurrentUser(null)}
-              showToast={showToast}
               isMobileOpen={isMobileOpen}
               setIsMobileOpen={setIsMobileOpen}
             />
@@ -314,6 +344,7 @@ export default function App() {
                 <DocumentRequest
                   setActiveView={setActiveView}
                   onSubmitRequest={handleCreateRequest}
+                  adminRequests={adminRequests}
                   showToast={showToast}
                 />
               )}
@@ -328,14 +359,17 @@ export default function App() {
                 />
               )}
 
+              {activeView === "track-requests" && (
+                <TrackRequests
+                  adminRequests={adminRequests}
+                  onCancelRequest={handleCancelRequest}
+                />
+              )}
+
+              {activeView === "announcements" && <Announcements />}
               {activeView === "profile" && (
                 <Profile currentUser={currentUser} showToast={showToast} />
               )}
-              {activeView === "announcements" && <Announcements />}
-              {activeView === "track-requests" && (
-                <TrackRequests adminRequests={adminRequests} />
-              )}
-
               {activeView === "help" && (
                 <PlaceholderView
                   title="Help & Support"
