@@ -236,6 +236,11 @@ export default function App() {
       setCurrentUser({
         name: "Juan Dela Cruz",
         course: "BSIT",
+        studentId: "2023-0142",
+        email: "juan.delacruz@cmu.edu.ph",
+        phone: "09123456789",
+        address: "Malabon City, Philippines",
+        yearLevel: "3rd Year",
         role: "student",
       });
       setActiveView("student-home");
@@ -243,10 +248,23 @@ export default function App() {
       setCurrentUser({
         name: "Admin Staff",
         course: "Registrar Admin",
+        studentId: "ADM-2026",
+        email: "admin.registrar@cmu.edu.ph",
+        phone: "09987654321",
+        address: "City of Malabon University",
+        yearLevel: "Registrar Staff",
         role: "admin",
       });
       setActiveView("admin-home");
     }
+  };
+
+  // PERSIST PROFILE CHANGES TO PARENT APP STATE
+  const handleUpdateProfile = (updatedProfile) => {
+    setCurrentUser((prev) => ({
+      ...prev,
+      ...updatedProfile,
+    }));
   };
 
   const handleCreateRequest = (requestData) => {
@@ -254,14 +272,14 @@ export default function App() {
     const newRequest = {
       id: newId,
       studentName: currentUser?.name || "Juan Dela Cruz",
-      studentId: "2023-0142",
+      studentId: currentUser?.studentId || "2023-0142",
       docType: requestData.docType,
       purpose: requestData.purpose,
       copies: requestData.copies,
       delivery: requestData.delivery,
       fee: requestData.fee,
       dateRequested: "Just Now",
-      status: "Submitted", // Updated status name
+      status: "Submitted",
       clearanceFile: requestData.clearanceFile,
     };
 
@@ -367,9 +385,15 @@ export default function App() {
               )}
 
               {activeView === "announcements" && <Announcements />}
+
               {activeView === "profile" && (
-                <Profile currentUser={currentUser} showToast={showToast} />
+                <Profile
+                  currentUser={currentUser}
+                  onUpdateProfile={handleUpdateProfile}
+                  showToast={showToast}
+                />
               )}
+
               {activeView === "help" && (
                 <PlaceholderView
                   title="Help & Support"
