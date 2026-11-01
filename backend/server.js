@@ -17,6 +17,19 @@ const db = mysql.createConnection({
 app.get("/", (req, res) => {
   res.send("CMU Portal Backend is Live!");
 });
+app.get("/api/requests", (req, res) => {
+  db.query("SELECT * FROM requests", (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.json(result);
+  });
+});
+
+app.get("/api/records", (req, res) => {
+  db.query("SELECT * FROM records", (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.json(result);
+  });
+});
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
