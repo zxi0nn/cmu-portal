@@ -130,13 +130,10 @@ function Login({ handleLogin, showToast }) {
     e.preventDefault();
     if (username === "student" && password === "student123") {
       handleLogin("student");
-    } else if (username === "admin" && password === "admin123") {
+    } else if (username === "admin" && password === "adminhoneybunc6750") {
       handleLogin("admin");
     } else {
-      showToast(
-        "Invalid credentials. Hint: use student/student123 or admin/admin123",
-        "error",
-      );
+      showToast("Invalid credentials.", "error");
     }
   };
 
@@ -192,7 +189,7 @@ function Login({ handleLogin, showToast }) {
               <Lock className="absolute top-2.5 left-3 w-5 h-5 text-slate-400" />
               <input
                 type="password"
-                placeholder="Password (student123 / admin123)"
+                placeholder="Password (student123)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
