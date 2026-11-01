@@ -157,7 +157,7 @@ function Login({ handleLogin, showToast }) {
         </div>
         <div className="my-8 md:my-12">
           <h2 className="text-xl md:text-3xl font-bold leading-snug mb-3">
-            Student Document & Records Management System
+            E-REG: STUDENT DOCUMENT AND RECORDS MONITORING AND MANAGEMENT SYSTEM
           </h2>
           <p className="text-blue-200 text-xs md:text-sm">
             Official Web-Based Portal for Student Clearances, Document Requests,

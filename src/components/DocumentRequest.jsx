@@ -37,7 +37,6 @@ export default function DocumentRequest({
   const [selectedDocs, setSelectedDocs] = useState({});
   const [purpose, setPurpose] = useState("");
   const [customPurpose, setCustomPurpose] = useState("");
-
   const [delivery, setDelivery] = useState("Pick-up");
 
   // Modal State
@@ -135,7 +134,7 @@ export default function DocumentRequest({
   const handleFinalBatchSubmit = () => {
     if (!clearanceFile) {
       showToast(
-        "Please attach your signed Student Clearance PDF before submitting.",
+        "Please attach your signed Student Clearance file before submitting.",
         "error",
       );
       return;
@@ -169,7 +168,7 @@ export default function DocumentRequest({
     setShowModal(false);
   };
 
-  // Dynamic Browser PDF Download Trigger
+  // Dynamic Browser Download Trigger (Fixed text format to prevent PDF corruption errors)
   const handleSaveClearancePDF = () => {
     const finalPurposeStr =
       purpose === "Other matters"
@@ -217,11 +216,13 @@ Registrar Officer: ___________________________   Date: ______________
 ================================================================================
 `;
 
-    const blob = new Blob([clearanceText], { type: "application/pdf" });
+    const blob = new Blob([clearanceText], {
+      type: "text/plain;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    const filename = `CMU_Clearance_${modalForm.lastName.replace(/\s+/g, "_")}_${modalForm.studentId}.pdf`;
+    const filename = `CMU_Clearance_${modalForm.lastName.replace(/\s+/g, "_")}_${modalForm.studentId}.txt`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -701,7 +702,7 @@ Registrar Officer: ___________________________   Date: ______________
                 className="w-full sm:w-auto px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center space-x-2 transition cursor-pointer"
               >
                 <Download className="w-4 h-4 text-slate-600" />
-                <span>Save Clearance PDF</span>
+                <span>Save Clearance File</span>
               </button>
 
               <div className="flex items-center space-x-2 w-full sm:w-auto">
@@ -710,11 +711,11 @@ Registrar Officer: ___________________________   Date: ______________
                   <span>
                     {clearanceFile
                       ? clearanceFile.name
-                      : "Attach Signed Clearance PDF"}
+                      : "Attach Signed Clearance File"}
                   </span>
                   <input
                     type="file"
-                    accept=".pdf"
+                    accept=".txt,.pdf"
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
