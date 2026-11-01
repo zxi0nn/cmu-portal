@@ -6,3 +6,6 @@ const db = mysql.createConnection({
   database: "defaultdb",
   ssl: { rejectUnauthorized: false },
 });
+app.get("/", (req, res) => {
+  res.send("CMU Portal Backend is Live!");
+});
