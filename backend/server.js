@@ -1,3 +1,11 @@
+const express = require("express");
+const mysql = require("mysql2");
+const cors = require("cors");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "e-reg-muselkfan27-47f9.f.aivencloud.com",
   port: process.env.DB_PORT || 24348,
