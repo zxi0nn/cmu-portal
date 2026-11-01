@@ -36,6 +36,8 @@ export default function DocumentRequest({
 }) {
   const [selectedDocs, setSelectedDocs] = useState({});
   const [purpose, setPurpose] = useState("");
+  const [customPurpose, setCustomPurpose] = useState("");
+
   const [delivery, setDelivery] = useState("Pick-up");
 
   // Modal State
@@ -121,6 +123,11 @@ export default function DocumentRequest({
       return;
     }
 
+    if (purpose === "Other matters" && !customPurpose.trim()) {
+      showToast("Please specify your purpose under Other matters.", "error");
+      return;
+    }
+
     setShowModal(true);
   };
 
@@ -141,9 +148,14 @@ export default function DocumentRequest({
       )
       .join(", ");
 
+    const finalPurpose =
+      purpose === "Other matters"
+        ? `Other matters: ${customPurpose.trim()}`
+        : purpose;
+
     const payload = {
       docType: docTypeSummary,
-      purpose,
+      purpose: finalPurpose,
       delivery,
       fee: totalFee,
       items: calculatedItems,
@@ -159,6 +171,10 @@ export default function DocumentRequest({
 
   // Dynamic Browser PDF Download Trigger
   const handleSaveClearancePDF = () => {
+    const finalPurposeStr =
+      purpose === "Other matters"
+        ? `Other matters: ${customPurpose.trim()}`
+        : purpose;
     const clearanceText = `
 ================================================================================
                         CITY OF MALABON UNIVERSITY
@@ -172,6 +188,7 @@ Student ID Number   : ${modalForm.studentId}
 Salutation / Name   : ${modalForm.salutation} ${modalForm.firstName} ${modalForm.middleName} ${modalForm.lastName}
 Program / Course    : ${modalForm.program}
 Last Term Attended  : ${modalForm.lastSemester}
+Stated Purpose      : ${finalPurposeStr}
 
 DEPARTMENT CLEARANCE VERIFICATIONS:
 --------------------------------------------------------------------------------
@@ -386,13 +403,18 @@ Registrar Officer: ___________________________   Date: ______________
           )}
 
           {/* Purpose Selection */}
-          <div>
+          <div className="space-y-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Purpose <span className="text-red-500">*</span>
             </label>
             <select
               value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
+              onChange={(e) => {
+                setPurpose(e.target.value);
+                if (e.target.value !== "Other matters") {
+                  setCustomPurpose("");
+                }
+              }}
               className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-full text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
               required
             >
@@ -408,7 +430,21 @@ Registrar Officer: ___________________________   Date: ______________
               </option>
               <option value="Transfer Application">Transfer Application</option>
               <option value="Personal Copy">Personal Copy</option>
+              <option value="Other matters">Other matters:</option>
             </select>
+
+            {purpose === "Other matters" && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={customPurpose}
+                  onChange={(e) => setCustomPurpose(e.target.value)}
+                  placeholder="Please type your specific purpose here..."
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-full text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {/* Delivery Options */}
@@ -461,6 +497,7 @@ Registrar Officer: ___________________________   Date: ______________
               onClick={() => {
                 setSelectedDocs({});
                 setPurpose("");
+                setCustomPurpose("");
                 setDelivery("Pick-up");
               }}
               className="px-6 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-xs flex items-center space-x-1.5 transition cursor-pointer"
