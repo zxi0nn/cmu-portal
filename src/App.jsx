@@ -178,7 +178,7 @@ function Login({ handleLogin, showToast }) {
               <User className="absolute top-2.5 left-3 w-5 h-5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Username (student / admin)"
+                placeholder="Username (student)"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
