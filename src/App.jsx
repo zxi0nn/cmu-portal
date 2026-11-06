@@ -321,6 +321,7 @@ export default function App() {
             setActiveView={setActiveView}
             isMobileOpen={isMobileOpen}
             setIsMobileOpen={setIsMobileOpen}
+            adminRequests={adminRequests}
           />
           <div className="flex-1 flex overflow-hidden relative">
             <Sidebar

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Bell,
   ChevronDown,
@@ -21,7 +21,23 @@ export function Navbar({
   setActiveView,
   isMobileOpen,
   setIsMobileOpen,
+  adminRequests = [], // <-- Accepts shared state from App.jsx
 }) {
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Dynamically filter requests belonging to the current logged-in student
+  const studentRequests = adminRequests.filter(
+    (req) =>
+      req.studentName === currentUser?.name || req.studentId === "2023-0142",
+  );
+
+  // Map requests directly into live notifications based on their current status
+  const notifications = studentRequests.map((req) => ({
+    id: req.id,
+    message: `Your request for ${req.docType} is currently: ${req.status}`,
+    time: req.dateRequested || "Just Now",
+  }));
+
   return (
     <header className="bg-[#0F3EAB] text-white h-16 flex items-center justify-between px-4 md:px-6 shadow-md z-20 sticky top-0">
       <div className="flex items-center space-x-3 md:space-x-4">
@@ -58,10 +74,51 @@ export function Navbar({
       </div>
 
       <div className="flex items-center space-x-3 md:space-x-5">
-        <button className="relative text-blue-100 hover:text-white p-1 rounded-full transition cursor-pointer">
-          <Bell className="w-5 h-5 md:w-6 md:h-6" />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#0F3EAB]" />
-        </button>
+        {/* Dynamic Notification Bell Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="relative text-blue-100 hover:text-white p-1 rounded-full transition cursor-pointer focus:outline-none"
+          >
+            <Bell className="w-5 h-5 md:w-6 md:h-6" />
+            {notifications.length > 0 && (
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-[#0F3EAB] animate-pulse" />
+            )}
+          </button>
+
+          {showDropdown && (
+            <div className="absolute right-0 mt-3 w-80 bg-white shadow-2xl rounded-xl p-4 text-black z-50 border border-gray-100">
+              <div className="flex justify-between items-center border-b pb-2 mb-3">
+                <h3 className="font-bold text-sm text-gray-800">
+                  System Notifications
+                </h3>
+                <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">
+                  Live
+                </span>
+              </div>
+
+              {notifications.length === 0 ? (
+                <p className="text-xs text-gray-500 py-4 text-center">
+                  No recent request updates
+                </p>
+              ) : (
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className="text-xs border-b border-gray-100 pb-2 last:border-0"
+                    >
+                      <p className="text-gray-700 font-medium">{n.message}</p>
+                      <span className="text-[10px] text-gray-400 mt-0.5 block">
+                        {n.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div
           onClick={() => setActiveView("profile")}
@@ -238,7 +295,6 @@ export function Sidebar({
                   <ChevronDown className="w-4 h-4" />
                 </button>
 
-                {/* Updated Admin Filter Tabs */}
                 <div className="pl-11 pr-2 py-1 space-y-1">
                   {[
                     "All Requests",
