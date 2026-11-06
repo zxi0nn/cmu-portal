@@ -227,7 +227,6 @@ export function Sidebar({
                 }`}
               >
                 <HelpCircle className="w-5 h-5" />
-                <span>Help & support</span>
               </button>
             </>
           ) : (
