@@ -217,17 +217,6 @@ export function Sidebar({
                 <Megaphone className="w-5 h-5" />
                 <span>Announcement</span>
               </button>
-
-              <button
-                onClick={() => handleNavClick(() => setActiveView("help"))}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition cursor-pointer ${
-                  activeView === "help"
-                    ? "bg-blue-700/80 text-white"
-                    : "text-blue-100 hover:bg-blue-800/50"
-                }`}
-              >
-                <HelpCircle className="w-5 h-5" />
-              </button>
             </>
           ) : (
             <>
