@@ -281,21 +281,6 @@ export function Sidebar({
                 <Users className="w-5 h-5" />
                 <span>Students Records</span>
               </button>
-
-              <button
-                onClick={() =>
-                  handleNavClick(() => setActiveView("admin-inventory"))
-                }
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition cursor-pointer ${
-                  activeView === "admin-inventory"
-                    ? "bg-blue-700/80 text-white"
-                    : "text-blue-100 hover:bg-blue-800/50"
-                }`}
-              >
-                <Box className="w-5 h-5" />
-                <span>Document Inventory</span>
-              </button>
-
               <button
                 onClick={() => handleNavClick(() => setActiveView("settings"))}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition cursor-pointer ${

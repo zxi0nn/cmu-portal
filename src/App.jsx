@@ -398,13 +398,7 @@ export default function App() {
                   desc="Student directory and academic profiles management."
                 />
               )}
-              {activeView === "admin-inventory" && (
-                <PlaceholderView
-                  title="Document Inventory Management"
-                  icon={Box}
-                  desc="Manage document catalog and requirement forms."
-                />
-              )}
+
               {activeView === "settings" && (
                 <PlaceholderView
                   title="Account & Portal Settings"
