@@ -391,13 +391,6 @@ export default function App() {
                 />
               )}
 
-              {activeView === "help" && (
-                <PlaceholderView
-                  title="Help & Support"
-                  icon={HelpCircle}
-                  desc="Contact the Registrar's Office at registrar@cmu.edu.ph for assistance."
-                />
-              )}
               {activeView === "admin-students" && (
                 <PlaceholderView
                   title="Student Masterlist Records"

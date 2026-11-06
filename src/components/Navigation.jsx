@@ -159,11 +159,7 @@ export function Sidebar({
 
                 {activeView === "my-records" && (
                   <div className="pl-11 pr-2 py-1 space-y-1">
-                    {[
-                      "Enrollment records",
-                      "Academic Records",
-                      "Personal information",
-                    ].map((tab) => (
+                    {["Academic Records"].map((tab) => (
                       <button
                         key={tab}
                         onClick={() => handleNavClick(() => setRecordsTab(tab))}

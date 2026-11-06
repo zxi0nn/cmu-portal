@@ -40,11 +40,7 @@ export default function StudentRecords({
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
         <div className="flex border-b border-slate-200 mb-6">
-          {[
-            "Enrollment records",
-            "Academic Records",
-            "Personal information",
-          ].map((tab) => (
+          {["Academic Records"].map((tab) => (
             <button
               key={tab}
               onClick={() => setRecordsTab(tab)}
